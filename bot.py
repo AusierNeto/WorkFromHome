@@ -1,69 +1,55 @@
-# Import for the Desktop Bot
-from botcity.core import DesktopBot
-
-# Import for the Web Bot
-from botcity.web import WebBot, Browser, By
-
-# Import for integration with BotCity Maestro SDK
-from botcity.maestro import *
-
+import os
+from pathlib import Path
+import time
 import chromedriver_autoinstaller
 
-# Disable errors if we are not connected to Maestro
+from botcity.core import DesktopBot
+from botcity.web import WebBot, Browser, By
+from botcity.maestro import *
+
+from selenium.webdriver import Chrome
+
+from utils.constants import FILENAME, URL
+
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
-def main():
-    # Runner passes the server url, the id of the task being executed,
-    # the access token and the parameters that this task receives (when applicable).
+
+def webbot_download():
+    chromedriver_autoinstaller.install()
+    webbot = WebBot()
+    webbot.headless = True
+
+    webbot.browse(URL)
+    webbot.wait(3000)
+    webbot.stop_browser()
+
+def desktop_bot_download():
+    desktop_bot = DesktopBot()
+    desktop_bot.browse(URL)
+    time.sleep(2)
+
+def clean_downloaded_files():
+    downloads_directory = Path.home() / "Downloads"
+    downloaded_file_list = [f for f in os.listdir(downloads_directory) if FILENAME in f]
+    for file in downloaded_file_list:
+        os.remove(downloads_directory / file)
+
+def action():
     maestro = BotMaestroSDK.from_sys_args()
-    ## Fetch the BotExecution with details from the task, including parameters
     execution = maestro.get_execution()
 
     print(f"Task ID is: {execution.task_id}")
     print(f"Task Parameters are: {execution.parameters}")
 
-    desktop_bot = DesktopBot()
+    clean_downloaded_files()
+    desktop_bot_download()
 
-    # Execute operations with the DesktopBot as desired
-    # desktop_bot.control_a()
-    # desktop_bot.control_c()
-    # value = desktop_bot.get_clipboard()
+    return True
 
-    webbot = WebBot()
-
-    # Configure whether or not to run on headless mode
-    webbot.headless = False
-
-    # Uncomment to change the default Browser to Firefox
-    # webbot.browser = Browser.FIREFOX
-
-    # Uncomment to set the WebDriver path
-    # webbot.driver_path = "<path to your WebDriver binary>"
-
-    # Opens the BotCity website.
-    webbot.browse("https://www.botcity.dev")
-
-    # Implement here your logic...
-    ...
-
-    # Wait 3 seconds before closing
-    webbot.wait(3000)
-
-    # Finish and clean up the Web Browser
-    # You MUST invoke the stop_browser to avoid
-    # leaving instances of the webdriver open
-    webbot.stop_browser()
-
-    # Uncomment to mark this task as finished on BotMaestro
-    # maestro.finish_task(
-    #     task_id=execution.task_id,
-    #     status=AutomationTaskFinishStatus.SUCCESS,
-    #     message="Task Finished OK."
-    # )
 
 def not_found(label):
     print(f"Element not found: {label}")
 
 
 if __name__ == '__main__':
-    main()
+    action()
